@@ -35,12 +35,25 @@ pi install npm:pi-openlux
 
 三选一：
 
-1. 启动 `pi` 后 `/login`，选 **OpenLux 中转站**，粘贴 `sk-...`（存进 `~/.pi/agent/auth.json`，推荐）
-2. 环境变量：`export OPENLUX_API_KEY=sk-...`
-3. 在 `~/.pi/agent/models.json` 里写
+1. **`/login`（推荐）**：启动 `pi` 后
+
+   ```
+   /login              # 弹出列表，选「OpenLux 中转站」
+   /login openlux      # 跳过列表，直接进入密钥输入
+   ```
+
+   密钥输入是掩码的，保存在 `~/.pi/agent/auth.json`（权限 0600）。
+   换设备只要在这一台再 `/login` 一次，别把 `auth.json` 提交到 git。
+   删除：`/logout` → 选 OpenLux 中转站。
+
+2. 环境变量（CI / 不想落盘）：`export OPENLUX_API_KEY=sk-...`
+
+3. 写在 `~/.pi/agent/models.json`（会跟着配置一起同步，注意别提交到公开仓库）
    ```json
    { "providers": { "openlux": { "apiKey": "sk-..." } } }
    ```
+
+一次性覆盖：`pi --api-key sk-... --model openlux/gpt-6-luna`
 
 ## 使用
 
