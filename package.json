@@ -1,6 +1,6 @@
 {
   "name": "pi-openlux",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenLux 中转站 provider for pi: 自动发现模型、按端点类型选对 API 格式（Claude 走 anthropic-messages，GPT 走 openai-responses）",
   "type": "module",
   "keywords": ["pi-package", "pi", "openlux", "provider", "relay"],

@@ -296,6 +296,17 @@ function guessContextWindow(id: string, description: string): number {
   return 200000;
 }
 
+/**
+ * 目录里查不到的新模型，按家族给 thinking 档位映射。
+ * gemini 实测：minimal/low/medium/high 可用，关不掉（off=null），xhigh/max 不支持。
+ */
+function defaultThinkingLevelMap(id: string): Record<string, unknown> | undefined {
+  if (/^gemini-/i.test(id)) {
+    return { off: null, minimal: "minimal", low: "low", medium: "medium", high: "high", xhigh: null, max: null };
+  }
+  return undefined;
+}
+
 function guessMaxTokens(id: string): number {
   if (/^gemini-/i.test(id)) return 65536;
   if (/^claude-|^gpt-|^grok-/i.test(id)) return 64000;
@@ -377,8 +388,13 @@ function deriveModel(entry: Record<string, any>): ModelConfig | undefined {
   if (!transport) return undefined;
 
   const builtin = lookupBuiltin(id);
+  const description = String(entry.description ?? "");
+  // 中转站的 tags 不一定标「思考」（例如 gemini-4-*），所以再看描述和模型家族
+  const mentionsThinking = /思考|推理|thinking|reasoning/i.test(`${tags} ${description}`);
   const reasoning =
-    typeof builtin?.reasoning === "boolean" ? builtin.reasoning : tags.includes("思考") || /^claude-|^gpt-/i.test(id);
+    typeof builtin?.reasoning === "boolean"
+      ? builtin.reasoning
+      : mentionsThinking || /^claude-|^gpt-|^gemini-|^grok-|^o\d/i.test(id);
   const input = builtin?.input ?? (Number(entry.show_image_upload) === 1 || tags.includes("识图") ? ["text", "image"] : ["text"]);
 
   const model: ModelConfig = {
@@ -389,11 +405,12 @@ function deriveModel(entry: Record<string, any>): ModelConfig | undefined {
     reasoning,
     input,
     cost: buildCost(entry),
-    contextWindow: builtin?.contextWindow ?? guessContextWindow(id, String(entry.description ?? "")),
+    contextWindow: builtin?.contextWindow ?? guessContextWindow(id, description),
     maxTokens: builtin?.maxTokens ?? guessMaxTokens(id),
   };
 
-  if (builtin?.thinkingLevelMap) model.thinkingLevelMap = builtin.thinkingLevelMap;
+  const thinkingLevelMap = builtin?.thinkingLevelMap ?? (reasoning ? defaultThinkingLevelMap(id) : undefined);
+  if (thinkingLevelMap) model.thinkingLevelMap = thinkingLevelMap;
   if (builtin?.inputLimits) model.inputLimits = builtin.inputLimits;
 
   const compat = buildCompat(id, transport.api, builtin);
